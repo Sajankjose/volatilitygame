@@ -1,0 +1,1360 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ride the Market - Geojit Investment Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #F7F9FA;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 390px;
+            min-height: 100vh;
+            background: #F7F9FA;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .screen {
+            display: none;
+            height: 100vh;
+            padding: 24px;
+            flex-direction: column;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pathDraw {
+            from { stroke-dashoffset: 1000; }
+            to { stroke-dashoffset: 0; }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        .animate-scale-in {
+            animation: scaleIn 0.6s ease-out forwards;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            height: 52px;
+            border-radius: 9999px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #0B6E69;
+            color: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .btn-primary:hover {
+            background: #095b57;
+            transform: scale(1.02);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #0B6E69;
+            border: 2px solid #0B6E69;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .btn-secondary:hover {
+            background: #F7F9FA;
+            transform: scale(1.02);
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.98);
+        }
+
+        /* Card Styles */
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card-gradient {
+            background: linear-gradient(135deg, #0B6E69 0%, #16A34A 100%);
+            border-radius: 24px;
+            padding: 24px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Modal/Overlay */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            z-index: 50;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            max-width: 448px;
+            width: 100%;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            background: white;
+            border-radius: 9999px;
+            padding: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .progress-fill {
+            height: 12px;
+            background: linear-gradient(90deg, #0B6E69 0%, #16A34A 100%);
+            border-radius: 9999px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        /* Canvas */
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Game Buttons */
+        .game-btn {
+            height: 50px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .game-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .game-btn:not(:disabled):hover {
+            transform: scale(1.05);
+        }
+
+        .game-btn:not(:disabled):active {
+            transform: scale(0.95);
+        }
+
+        /* Leaderboard */
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-radius: 12px;
+            background: #F7F9FA;
+            margin-bottom: 8px;
+        }
+
+        .leaderboard-item.user {
+            background: linear-gradient(90deg, rgba(244,180,0,0.1) 0%, rgba(244,180,0,0.05) 100%);
+            border: 2px solid #F4B400;
+        }
+
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 12px; }
+        .gap-4 { gap: 16px; }
+        .text-center { text-align: center; }
+        .font-bold { font-weight: 700; }
+        .font-semibold { font-weight: 600; }
+        .rounded-full { border-radius: 9999px; }
+        .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-3 { margin-bottom: 12px; }
+        .mb-4 { margin-bottom: 16px; }
+        .mb-6 { margin-bottom: 24px; }
+        .mt-4 { margin-top: 16px; }
+        .mt-8 { margin-top: 32px; }
+        .p-3 { padding: 12px; }
+        .p-4 { padding: 16px; }
+        .p-6 { padding: 24px; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 96px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 12px 24px;
+            border-radius: 9999px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            border: 2px solid #0B6E69;
+            animation: slideUp 0.3s ease-out;
+            z-index: 100;
+        }
+
+        /* Event Footer */
+        .event-footer {
+            background: linear-gradient(90deg, #0B6E69 0%, #16A34A 100%);
+            border-radius: 16px;
+            padding: 12px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 12px;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        /* Volume Control */
+        .volume-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: white;
+            border-radius: 9999px;
+            padding: 8px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        /* SVG Icons */
+        .icon {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .icon-sm {
+            width: 16px;
+            height: 16px;
+        }
+
+        .icon-lg {
+            width: 32px;
+            height: 32px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Intro Screen -->
+        <div id="intro-screen" class="screen active">
+            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                <h1 style="font-size: 28px; font-weight: 700; color: #1A1A1A; margin-bottom: 12px; animation: fadeInUp 0.6s 0.2s ease-out backwards;">
+                    Ride the Market
+                </h1>
+                <p style="font-size: 16px; color: #6B7280; margin-bottom: 48px; max-width: 280px; animation: fadeInUp 0.6s 0.3s ease-out backwards;">
+                    Experience how investors navigate market volatility.
+                </p>
+
+                <!-- SVG Illustration -->
+                <div style="position: relative; width: 256px; height: 256px; margin-bottom: 48px; animation: scaleIn 0.8s 0.4s ease-out backwards;">
+                    <svg viewBox="0 0 256 256" style="width: 100%; height: 100%;">
+                        <path d="M 10 180 Q 64 100, 128 140 T 246 120" fill="none" stroke="#0B6E69" stroke-width="2" opacity="0.2" 
+                              stroke-dasharray="1000" stroke-dashoffset="1000" style="animation: pathDraw 1.5s 0.6s ease-out forwards;"/>
+                        <path d="M 10 160 Q 64 80, 128 120 T 246 100" fill="none" stroke="#0B6E69" stroke-width="2" opacity="0.3"
+                              stroke-dasharray="1000" stroke-dashoffset="1000" style="animation: pathDraw 1.5s 0.7s ease-out forwards;"/>
+                        <path d="M 10 140 Q 64 60, 128 100 T 246 80" fill="none" stroke="#0B6E69" stroke-width="3"
+                              stroke-dasharray="1000" stroke-dashoffset="1000" style="animation: pathDraw 1.5s 0.8s ease-out forwards;"/>
+                        <g opacity="0" style="animation: fadeIn 0.5s 1.5s ease-out forwards;">
+                            <circle cx="200" cy="85" r="6" fill="#F4B400"/>
+                            <svg x="185" y="70" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0B6E69" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                <polyline points="17 6 23 6 23 12"></polyline>
+                            </svg>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="game.showScreen('instructions')" style="animation: fadeInUp 0.6s 0.5s ease-out backwards;">
+                Start the Experience
+            </button>
+
+            <p style="font-size: 12px; color: #6B7280; text-align: center; margin-top: 16px; line-height: 1.5; animation: fadeIn 0.6s 0.6s ease-out backwards;">
+                For educational illustration only. Market investments are subject to risk.
+                Past performance does not guarantee future returns.
+            </p>
+        </div>
+
+        <!-- Instructions Screen -->
+        <div id="instructions-screen" class="screen">
+            <div style="flex: 1; display: flex; flex-direction: column;">
+                <h1 class="animate-fade-in-up" style="font-size: 28px; font-weight: 700; color: #1A1A1A; margin-bottom: 32px; text-align: center; margin-top: 64px;">
+                    How to Play
+                </h1>
+
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 24px;">
+                    <div class="card" style="animation: fadeInUp 0.5s 0.2s ease-out backwards;">
+                        <div style="display: flex; align-items: flex-start; gap: 16px;">
+                            <div style="width: 48px; height: 48px; background: #F7F9FA; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0B6E69">
+                                    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+                                    <polyline points="17 18 23 18 23 12"></polyline>
+                                </svg>
+                            </div>
+                            <p style="font-size: 16px; color: #1A1A1A; flex: 1; margin-top: 8px;">
+                                Markets move up and down.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card" style="animation: fadeInUp 0.5s 0.35s ease-out backwards;">
+                        <div style="display: flex; align-items: flex-start; gap: 16px;">
+                            <div style="width: 48px; height: 48px; background: #F7F9FA; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0B6E69">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                </svg>
+                            </div>
+                            <p style="font-size: 16px; color: #1A1A1A; flex: 1; margin-top: 8px;">
+                                Stay calm and continue investing.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card" style="animation: fadeInUp 0.5s 0.5s ease-out backwards;">
+                        <div style="display: flex; align-items: flex-start; gap: 16px;">
+                            <div style="width: 48px; height: 48px; background: #F7F9FA; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0B6E69">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <circle cx="12" cy="12" r="6"></circle>
+                                    <circle cx="12" cy="12" r="2"></circle>
+                                </svg>
+                            </div>
+                            <p style="font-size: 16px; color: #1A1A1A; flex: 1; margin-top: 8px;">
+                                Reach the long-term wealth goal.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="game.startGame()" style="animation: fadeInUp 0.6s 0.6s ease-out backwards;">
+                Start Game
+            </button>
+        </div>
+
+        <!-- Gameplay Screen -->
+        <div id="gameplay-screen" class="screen">
+            <button class="volume-btn" onclick="game.toggleMute()">
+                <svg id="volume-icon" class="icon" viewBox="0 0 24 24" style="color: #0B6E69;">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+            </button>
+
+            <!-- Header -->
+            <div class="mb-3">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <h1 style="font-size: 24px; font-weight: 700; color: #1A1A1A;">Ride the Market</h1>
+                    <div style="display: flex; align-items: center; gap: 8px; background: white; padding: 6px 12px; border-radius: 9999px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <svg class="icon-sm" viewBox="0 0 24 24" style="color: #0B6E69;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span id="timer" style="font-size: 14px; font-weight: 600; color: #1A1A1A;">0s</span>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-bar mb-3">
+                    <div style="position: relative; height: 12px; background: #F7F9FA; border-radius: 9999px; overflow: hidden;">
+                        <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
+                        <div style="position: absolute; top: 0; right: 0; height: 100%; display: flex; align-items: center; padding-right: 8px;">
+                            <span id="progress-text" style="font-size: 10px; font-weight: 700; color: #0B6E69;">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Card -->
+                <div class="card-gradient">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: baseline; gap: 4px;">
+                            <svg class="icon-sm" viewBox="0 0 24 24" style="color: white;">
+                                <path d="M6 3h12M6 8h12m-6 13V8"></path>
+                            </svg>
+                            <span id="portfolio-value" style="font-size: 24px; font-weight: 700;">₹1,000.00</span>
+                        </div>
+                        <div id="profit-badge" style="display: flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 9999px; background: #F4B400;">
+                            <svg class="icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                <polyline points="17 6 23 6 23 12"></polyline>
+                            </svg>
+                            <span id="profit-percent" style="font-size: 13px; font-weight: 700;">+0.00%</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; opacity: 0.9;">
+                        <span id="units-display">10.00 units × ₹100.00</span>
+                        <span id="invested-display">Invested: ₹1,000.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas -->
+            <div style="flex: 1; background: white; border-radius: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 16px; margin-bottom: 12px; position: relative; overflow: hidden; min-height: 0;">
+                <canvas id="market-canvas" width="340" height="400"></canvas>
+            </div>
+
+            <!-- Event Footer -->
+            <div id="event-footer" class="hidden event-footer">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span id="event-emoji" style="font-size: 24px; flex-shrink: 0;">📉</span>
+                    <div style="flex: 1; min-width: 0;">
+                        <h3 id="event-title" style="font-size: 13px; font-weight: 600; margin-bottom: 2px;">Market Drop</h3>
+                        <p id="event-message" style="font-size: 11px; opacity: 0.9;">Stay calm! Successful investors don't panic sell.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                <button id="hold-btn" class="game-btn" onclick="game.handleHold()" style="background: white; border: 2px solid #0B6E69; color: #0B6E69;">
+                    <span>💎 Hold</span>
+                    <span id="hold-count" style="font-size: 9px; margin-top: 2px; color: #666;">6 left</span>
+                </button>
+                <button id="invest-btn" class="game-btn" onclick="game.handleInvest()" style="background: #0B6E69; color: white;">
+                    <span>💰 Invest</span>
+                    <span id="invest-count" style="font-size: 9px; margin-top: 2px; opacity: 0.9;">5 left</span>
+                </button>
+                <button class="game-btn" onclick="game.handleExit()" style="background: white; border: 2px solid #DC2626; color: #DC2626;">
+                    <span>🚪 Exit</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="screen">
+            <div style="flex: 1; overflow-y: auto; padding-bottom: 16px;">
+                <div style="text-align: center; margin-top: 32px; margin-bottom: 24px; animation: fadeInUp 0.6s ease-out;">
+                    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #0B6E69 0%, #16A34A 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; animation: scaleIn 0.6s 0.2s ease-out backwards;">
+                        <svg class="icon" style="width: 40px; height: 40px; color: white;" viewBox="0 0 24 24">
+                            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                            <path d="M4 22h16"></path>
+                            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                        </svg>
+                    </div>
+                    <h1 style="font-size: 28px; font-weight: 700; color: #1A1A1A; margin-bottom: 8px;">Your Market Journey</h1>
+                </div>
+
+                <!-- Summary Card -->
+                <div class="card mb-6" style="animation: fadeInUp 0.6s 0.3s ease-out backwards;">
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid #F7F9FA;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 40px; height: 40px; background: #F7F9FA; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <svg class="icon" viewBox="0 0 24 24" style="color: #0B6E69;">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p style="font-size: 14px; color: #6B7280;">Time Stayed Invested</p>
+                                    <p id="result-time" style="font-size: 18px; font-weight: 600; color: #1A1A1A;">0 seconds</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid #F7F9FA;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 40px; height: 40px; background: #F7F9FA; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <svg class="icon" viewBox="0 0 24 24" style="color: #0B6E69;">
+                                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p style="font-size: 14px; color: #6B7280;">Units Purchased</p>
+                                    <p id="result-units" style="font-size: 18px; font-weight: 600; color: #1A1A1A;">10.00 units</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 40px; height: 40px; background: #F7F9FA; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <svg class="icon" viewBox="0 0 24 24" style="color: #0B6E69;">
+                                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                        <polyline points="17 6 23 6 23 12"></polyline>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p style="font-size: 14px; color: #6B7280;">Final Outcome</p>
+                                    <p id="result-outcome" style="font-size: 18px; font-weight: 600; color: #1A1A1A;">Completed Journey</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #F7F9FA;">
+                        <p id="result-message" style="font-size: 16px; color: #1A1A1A; line-height: 1.5;"></p>
+                    </div>
+                </div>
+
+                <!-- Key Learning -->
+                <div class="card-gradient mb-6" style="animation: fadeInUp 0.6s 0.4s ease-out backwards;">
+                    <p style="font-size: 14px; opacity: 0.9; margin-bottom: 8px; font-weight: 600;">Key Learning</p>
+                    <p style="font-size: 16px; line-height: 1.5;">
+                        Market volatility rewards disciplined investors who stay the course.
+                    </p>
+                </div>
+
+                <!-- Leaderboard -->
+                <div class="card mb-6" style="animation: fadeInUp 0.6s 0.5s ease-out backwards;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                        <h2 style="font-size: 18px; font-weight: 700; color: #1A1A1A;">Leaderboard</h2>
+                        <div style="background: #F7F9FA; padding: 4px 12px; border-radius: 9999px;">
+                            <p id="user-rank" style="font-size: 12px; font-weight: 600; color: #0B6E69;">Rank #2</p>
+                        </div>
+                    </div>
+                    <div id="leaderboard" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; flex-direction: column; gap: 12px; animation: fadeInUp 0.6s 0.6s ease-out backwards;">
+                <button class="btn btn-primary" onclick="game.playAgain()">Play Again</button>
+                <button class="btn btn-secondary" onclick="game.showShare()">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <circle cx="18" cy="5" r="3"></circle>
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                    Share Result
+                </button>
+                <a href="https://www.geojit.com/campaigns/volatilitylab/marketscenarios.html" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="btn"
+                   style="background: white; color: #0B6E69; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-decoration: none;">
+                    Explore SIP Investing
+                </a>
+            </div>
+        </div>
+
+        <!-- Tutorial Overlay -->
+        <div id="tutorial-overlay" class="overlay">
+            <div class="modal">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #0B6E69 0%, #16A34A 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <svg class="icon" viewBox="0 0 24 24" style="color: white;">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                        </svg>
+                    </div>
+                    <h2 style="font-size: 22px; font-weight: 700; color: #1A1A1A;">How to Play</h2>
+                </div>
+
+                <div style="background: #F7F9FA; border-radius: 16px; padding: 16px; margin-bottom: 16px;">
+                    <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
+                        <div style="width: 32px; height: 32px; background: #0B6E69; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                            <svg class="icon-sm" viewBox="0 0 24 24" style="color: white;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <circle cx="12" cy="12" r="6"></circle>
+                                <circle cx="12" cy="12" r="2"></circle>
+                            </svg>
+                        </div>
+                        <div>
+                            <p style="font-size: 14px; font-weight: 600; color: #1A1A1A; margin-bottom: 4px;">Your Goal</p>
+                            <p style="font-size: 13px; color: #666;">Ride the yellow dot through market ups and downs to reach the finish line!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <div style="width: 32px; height: 32px; background: white; border: 2px solid #0B6E69; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">💎</div>
+                        <div>
+                            <p style="font-size: 13px; font-weight: 600; color: #1A1A1A;">Hold <span style="color: #0B6E69;">(6 times)</span></p>
+                            <p style="font-size: 12px; color: #666;">Stay invested through volatility</p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <div style="width: 32px; height: 32px; background: #0B6E69; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">💰</div>
+                        <div>
+                            <p style="font-size: 13px; font-weight: 600; color: #1A1A1A;">Invest More <span style="color: #0B6E69;">(5 times)</span></p>
+                            <p style="font-size: 12px; color: #666;">Invest ₹500 - get more units when market is down!</p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <div style="width: 32px; height: 32px; background: white; border: 2px solid #DC2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">🚪</div>
+                        <div>
+                            <p style="font-size: 13px; font-weight: 600; color: #1A1A1A;">Exit Market</p>
+                            <p style="font-size: 12px; color: #666;">End game early and see results</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(90deg, rgba(244,180,0,0.1) 0%, rgba(244,180,0,0.05) 100%); border: 1px solid #F4B400; border-radius: 12px; padding: 12px; margin-bottom: 20px;">
+                    <p style="font-size: 12px; color: #1A1A1A;">
+                        <span style="font-weight: 700;">💡 Pro Tip:</span> Use your actions wisely! Save "Invest" for market dips to get more units.
+                    </p>
+                </div>
+
+                <button class="btn btn-primary" onclick="game.closeTutorial()" style="background: linear-gradient(90deg, #0B6E69 0%, #16A34A 100%); box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    Let's Ride! 🚀
+                </button>
+            </div>
+        </div>
+
+        <!-- Share Modal -->
+        <div id="share-overlay" class="overlay">
+            <div class="modal">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h2 style="font-size: 18px; font-weight: 600; color: #1A1A1A;">Share Your Result</h2>
+                    <button onclick="game.closeShare()" style="width: 32px; height: 32px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: background 0.2s;">
+                        <svg class="icon" viewBox="0 0 24 24" style="color: #6B7280;">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Share Card -->
+                <div style="aspect-ratio: 1; background: linear-gradient(135deg, #0B6E69 0%, #16A34A 100%); border-radius: 24px; padding: 32px; display: flex; flex-direction: column; justify-content: space-between; color: white; margin-bottom: 24px;">
+                    <div>
+                        <h3 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">Ride the Market</h3>
+                        <div style="width: 48px; height: 4px; background: #F4B400; border-radius: 9999px;"></div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <p id="share-message" style="font-size: 18px; line-height: 1.5;"></p>
+                        <div style="display: flex; gap: 16px; font-size: 14px; opacity: 0.9;">
+                            <div>
+                                <p id="share-time" style="font-weight: 600;">0s</p>
+                                <p>Invested</p>
+                            </div>
+                            <div>
+                                <p id="share-units" style="font-weight: 600;">10.00</p>
+                                <p>Units</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p style="font-size: 14px; opacity: 0.9; margin-bottom: 16px;">
+                            Learn how disciplined investing works.
+                        </p>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 12px; opacity: 0.75;">Geojit Financial Services</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="alert('Share functionality would be implemented here!')">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download Card
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sound Manager
+        class SoundManager {
+            constructor() {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.masterGain = this.audioContext.createGain();
+                this.masterGain.connect(this.audioContext.destination);
+                this.masterGain.gain.value = 0.3;
+                this.isMuted = localStorage.getItem('gameMuted') === 'true';
+            }
+
+            playTone(frequency, duration, type = 'sine', volume = 1) {
+                if (this.isMuted) return;
+
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(this.masterGain);
+
+                oscillator.frequency.value = frequency;
+                oscillator.type = type;
+
+                gainNode.gain.setValueAtTime(volume * 0.3, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + duration);
+            }
+
+            playHold() {
+                this.playTone(600, 0.15, 'sine', 0.5);
+                setTimeout(() => this.playTone(650, 0.1, 'sine', 0.3), 50);
+            }
+
+            playInvest() {
+                this.playTone(600, 0.1, 'sine', 0.5);
+                setTimeout(() => this.playTone(800, 0.1, 'sine', 0.5), 80);
+                setTimeout(() => this.playTone(1000, 0.15, 'sine', 0.6), 160);
+            }
+
+            playExit() {
+                this.playTone(400, 0.2, 'sine', 0.5);
+                setTimeout(() => this.playTone(350, 0.2, 'sine', 0.4), 100);
+            }
+
+            playMarketDrop() {
+                this.playTone(700, 0.15, 'sine', 0.4);
+                setTimeout(() => this.playTone(500, 0.15, 'sine', 0.4), 100);
+            }
+
+            playMarketRise() {
+                this.playTone(500, 0.15, 'sine', 0.4);
+                setTimeout(() => this.playTone(700, 0.15, 'sine', 0.4), 100);
+            }
+
+            playVolatility() {
+                this.playTone(600, 0.1, 'square', 0.3);
+                setTimeout(() => this.playTone(650, 0.1, 'square', 0.3), 80);
+            }
+
+            playSuccess() {
+                this.playTone(523, 0.15, 'sine', 0.6);
+                setTimeout(() => this.playTone(659, 0.15, 'sine', 0.6), 150);
+                setTimeout(() => this.playTone(784, 0.15, 'sine', 0.6), 300);
+                setTimeout(() => this.playTone(1047, 0.3, 'sine', 0.7), 450);
+            }
+
+            playStart() {
+                this.playTone(400, 0.1, 'sine', 0.5);
+                setTimeout(() => this.playTone(600, 0.1, 'sine', 0.5), 100);
+                setTimeout(() => this.playTone(800, 0.2, 'sine', 0.6), 200);
+            }
+
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                localStorage.setItem('gameMuted', this.isMuted);
+                return this.isMuted;
+            }
+        }
+
+        // Game Manager
+        class Game {
+            constructor() {
+                this.sound = new SoundManager();
+                this.currentScreen = 'intro';
+                this.units = 10;
+                this.time = 0;
+                this.progress = 0;
+                this.nav = 100;
+                this.investedAmount = 1000;
+                this.holdActionsLeft = 6;
+                this.investActionsLeft = 5;
+                this.gameActive = false;
+                this.exited = false;
+                this.marketPath = [];
+                this.timer = null;
+                this.eventTimer = null;
+                this.animationFrame = null;
+                this.canvas = document.getElementById('market-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                this.events = [
+                    { type: 'drop', emoji: '📉', title: 'Market Drop', message: "Stay calm! Successful investors don't panic sell." },
+                    { type: 'rise', emoji: '📈', title: 'Market Rally', message: 'Great! Staying invested is paying off.' },
+                    { type: 'volatility', emoji: '⚡', title: 'Volatility Alert', message: 'Markets fluctuate. Long-term investing wins!' }
+                ];
+
+                this.updateVolumeIcon();
+            }
+
+            showScreen(screen) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById(`${screen}-screen`).classList.add('active');
+                this.currentScreen = screen;
+            }
+
+            startGame() {
+                this.showScreen('gameplay');
+                document.getElementById('tutorial-overlay').classList.add('active');
+            }
+
+            closeTutorial() {
+                this.sound.playStart();
+                document.getElementById('tutorial-overlay').classList.remove('active');
+                this.gameActive = true;
+                this.startGameLoop();
+            }
+
+            startGameLoop() {
+                this.generateMarketPath();
+                this.startTimer();
+                this.startEventSystem();
+                this.drawChart();
+            }
+
+            generateMarketPath() {
+                const points = 60;
+                const path = [];
+                let value = 0.5;
+
+                for (let i = 0; i < points; i++) {
+                    const trend = Math.sin(i * 0.05) * 0.02;
+                    const volatility = (Math.random() - 0.5) * 0.08;
+                    const momentum = i > 0 ? (value - path[i - 1]) * 0.3 : 0;
+
+                    value += trend + volatility + momentum;
+                    value = Math.max(0.2, Math.min(0.8, value));
+                    path.push(value);
+                }
+
+                this.marketPath = path;
+            }
+
+            startTimer() {
+                this.timer = setInterval(() => {
+                    if (this.gameActive) {
+                        this.time++;
+                        this.progress = Math.min(this.progress + 2.5, 100);
+                        
+                        document.getElementById('timer').textContent = `${this.time}s`;
+                        document.getElementById('progress-fill').style.width = `${this.progress}%`;
+                        document.getElementById('progress-text').textContent = `${Math.round(this.progress)}%`;
+
+                        if (this.progress >= 100) {
+                            this.sound.playSuccess();
+                            this.endGame(false);
+                        }
+                    }
+                }, 1000);
+            }
+
+            startEventSystem() {
+                this.eventTimer = setInterval(() => {
+                    if (this.gameActive && Math.random() < 0.15) {
+                        const event = this.events[Math.floor(Math.random() * this.events.length)];
+                        this.showEvent(event);
+                    }
+                }, 1000);
+            }
+
+            showEvent(event) {
+                const footer = document.getElementById('event-footer');
+                document.getElementById('event-emoji').textContent = event.emoji;
+                document.getElementById('event-title').textContent = event.title;
+                document.getElementById('event-message').textContent = event.message;
+                footer.classList.remove('hidden');
+
+                if (event.type === 'drop') this.sound.playMarketDrop();
+                else if (event.type === 'rise') this.sound.playMarketRise();
+                else if (event.type === 'volatility') this.sound.playVolatility();
+
+                setTimeout(() => footer.classList.add('hidden'), 4000);
+            }
+
+            drawChart() {
+                const draw = () => {
+                    if (!this.gameActive && this.progress < 100) return;
+
+                    const width = this.canvas.width;
+                    const height = this.canvas.height;
+                    
+                    this.ctx.clearRect(0, 0, width, height);
+
+                    // Grid
+                    this.ctx.strokeStyle = '#E5E7EB';
+                    this.ctx.lineWidth = 1;
+                    for (let i = 0; i < 5; i++) {
+                        const y = (height / 4) * i;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(0, y);
+                        this.ctx.lineTo(width, y);
+                        this.ctx.stroke();
+                    }
+
+                    // Market path
+                    this.ctx.strokeStyle = '#0B6E69';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.lineCap = 'round';
+                    this.ctx.lineJoin = 'round';
+                    this.ctx.beginPath();
+
+                    const points = this.marketPath.length;
+                    const segmentWidth = width / (points - 1);
+
+                    this.ctx.moveTo(0, height * this.marketPath[0]);
+
+                    for (let i = 0; i < points - 1; i++) {
+                        const x1 = i * segmentWidth;
+                        const y1 = height * this.marketPath[i];
+                        const x2 = (i + 1) * segmentWidth;
+                        const y2 = height * this.marketPath[i + 1];
+                        const cpX = (x1 + x2) / 2;
+                        const cpY = (y1 + y2) / 2;
+                        this.ctx.quadraticCurveTo(x1, y1, cpX, cpY);
+                    }
+
+                    const lastX = (points - 1) * segmentWidth;
+                    const lastY = height * this.marketPath[points - 1];
+                    this.ctx.lineTo(lastX, lastY);
+                    this.ctx.stroke();
+
+                    // Finish line
+                    this.ctx.strokeStyle = '#F4B400';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.setLineDash([8, 4]);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(lastX, 0);
+                    this.ctx.lineTo(lastX, height);
+                    this.ctx.stroke();
+                    this.ctx.setLineDash([]);
+
+                    // "FINISH" text
+                    this.ctx.fillStyle = '#F4B400';
+                    this.ctx.font = 'bold 14px Inter';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.save();
+                    this.ctx.translate(lastX, height / 2);
+                    this.ctx.rotate(-Math.PI / 2);
+                    this.ctx.fillText('FINISH', 0, -10);
+                    this.ctx.restore();
+
+                    // Player position
+                    const targetProgress = this.progress / 100;
+                    const playerIndex = targetProgress * (points - 1);
+                    const lowerIndex = Math.floor(playerIndex);
+                    const upperIndex = Math.min(Math.ceil(playerIndex), points - 1);
+                    const fraction = playerIndex - lowerIndex;
+
+                    const y1 = height * this.marketPath[lowerIndex];
+                    const y2 = height * this.marketPath[upperIndex];
+                    const playerX = playerIndex * segmentWidth;
+                    const playerY = y1 + (y2 - y1) * fraction;
+
+                    // Calculate NAV
+                    const navValue1 = this.marketPath[lowerIndex];
+                    const navValue2 = this.marketPath[upperIndex];
+                    const currentNavNormalized = navValue1 + (navValue2 - navValue1) * fraction;
+                    const currentNAV = 70 + (currentNavNormalized - 0.2) * (60 / 0.6);
+                    this.nav = Math.round(currentNAV * 100) / 100;
+
+                    this.updateStats();
+
+                    // Player marker
+                    this.ctx.shadowColor = '#F4B400';
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.fillStyle = '#F4B400';
+                    this.ctx.beginPath();
+                    this.ctx.arc(playerX, playerY, 8, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.shadowBlur = 0;
+
+                    // Player label
+                    this.ctx.fillStyle = '#1A1A1A';
+                    this.ctx.font = 'bold 12px Inter';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('You', playerX, playerY - 15);
+
+                    this.animationFrame = requestAnimationFrame(draw);
+                };
+
+                draw();
+            }
+
+            updateStats() {
+                const currentValue = this.units * this.nav;
+                const profitLoss = currentValue - this.investedAmount;
+                const profitLossPercent = ((profitLoss / this.investedAmount) * 100).toFixed(2);
+                const isProfit = profitLoss >= 0;
+
+                document.getElementById('portfolio-value').textContent = 
+                    `₹${currentValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                
+                const badge = document.getElementById('profit-badge');
+                badge.style.background = isProfit ? '#F4B400' : '#FF6B6B';
+                
+                const profitIcon = badge.querySelector('svg');
+                profitIcon.style.transform = isProfit ? '' : 'rotate(180deg)';
+                
+                document.getElementById('profit-percent').textContent = 
+                    `${isProfit ? '+' : ''}${profitLossPercent}%`;
+                
+                document.getElementById('units-display').textContent = 
+                    `${this.units.toFixed(2)} units × ₹${this.nav.toFixed(2)}`;
+                
+                document.getElementById('invested-display').textContent = 
+                    `Invested: ₹${this.investedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+
+            handleHold() {
+                if (this.holdActionsLeft > 0) {
+                    this.sound.playHold();
+                    this.holdActionsLeft--;
+                    document.getElementById('hold-count').textContent = `${this.holdActionsLeft} left`;
+                    this.showToast('💪 Holding steady!');
+                    
+                    if (this.holdActionsLeft === 0) {
+                        const btn = document.getElementById('hold-btn');
+                        btn.disabled = true;
+                        btn.style.background = '#E5E7EB';
+                        btn.style.borderColor = '#D1D5DB';
+                        btn.style.color = '#9CA3AF';
+                    }
+                } else {
+                    this.showToast('🚫 No more Hold actions left!');
+                }
+            }
+
+            handleInvest() {
+                if (this.investActionsLeft > 0) {
+                    this.sound.playInvest();
+                    
+                    const investmentAmount = 500;
+                    const unitsToAdd = Math.round((investmentAmount / this.nav) * 10) / 10;
+                    
+                    this.units += unitsToAdd;
+                    this.investedAmount += investmentAmount;
+                    this.investActionsLeft--;
+                    
+                    document.getElementById('invest-count').textContent = `${this.investActionsLeft} left`;
+                    
+                    const marketCondition = this.nav < 95 ? 'low' : this.nav > 105 ? 'high' : 'normal';
+                    
+                    if (marketCondition === 'low') {
+                        this.showToast(`🎯 Great timing! Added ${unitsToAdd.toFixed(2)} units at low price!`);
+                    } else if (marketCondition === 'high') {
+                        this.showToast(`💰 Added ${unitsToAdd.toFixed(2)} units at ₹${this.nav.toFixed(2)}`);
+                    } else {
+                        this.showToast(`🚀 Added ${unitsToAdd.toFixed(2)} units!`);
+                    }
+                    
+                    if (this.investActionsLeft === 0) {
+                        const btn = document.getElementById('invest-btn');
+                        btn.disabled = true;
+                        btn.style.background = '#9CA3AF';
+                        btn.style.color = '#E5E7EB';
+                    }
+                } else {
+                    this.showToast('🚫 No more Invest actions left!');
+                }
+            }
+
+            handleExit() {
+                this.sound.playExit();
+                this.endGame(true);
+            }
+
+            endGame(exited) {
+                this.gameActive = false;
+                this.exited = exited;
+                clearInterval(this.timer);
+                clearInterval(this.eventTimer);
+                cancelAnimationFrame(this.animationFrame);
+                
+                setTimeout(() => {
+                    this.showResults();
+                }, 500);
+            }
+
+            showResults() {
+                this.showScreen('result');
+                
+                document.getElementById('result-time').textContent = `${this.time} seconds`;
+                document.getElementById('result-units').textContent = `${this.units.toFixed(2)} units`;
+                document.getElementById('result-outcome').textContent = this.exited ? 'Exited Early' : 'Completed Journey';
+                
+                const message = this.exited
+                    ? `You exited the market early after ${this.time} seconds. Staying invested could have yielded better results.`
+                    : `You stayed invested through volatility and accumulated ${this.units.toFixed(2)} units. Well done!`;
+                
+                document.getElementById('result-message').textContent = message;
+                
+                this.generateLeaderboard();
+            }
+
+            generateLeaderboard() {
+                const avgNAV = 100;
+                const portfolioValue = this.units * avgNAV;
+                const profitPercent = ((this.units - 10) / 10) * 100;
+                
+                const userRank = Math.random() < 0.5 ? 2 : 3;
+                document.getElementById('user-rank').textContent = `Rank #${userRank}`;
+                
+                const leaderboard = [];
+                
+                // Better performers
+                const names = ['Rajesh K.', 'Priya M.'];
+                for (let i = 1; i < userRank; i++) {
+                    const bonusUnits = (userRank - i + 1) * 5 + Math.random() * 5;
+                    const topUnits = this.units + bonusUnits;
+                    const topValue = topUnits * avgNAV;
+                    const topProfit = ((topUnits - 10) / 10) * 100;
+                    
+                    leaderboard.push({
+                        rank: i,
+                        name: names[i - 1],
+                        units: topUnits,
+                        value: topValue,
+                        profit: topProfit,
+                        isUser: false
+                    });
+                }
+                
+                // User
+                leaderboard.push({
+                    rank: userRank,
+                    name: 'You',
+                    units: this.units,
+                    value: portfolioValue,
+                    profit: profitPercent,
+                    isUser: true
+                });
+                
+                // Worse performers
+                const otherNames = ['Amit S.', 'Sneha R.', 'Vikram T.', 'Neha P.'];
+                for (let i = userRank + 1; i <= 6; i++) {
+                    const penalty = (i - userRank) * 3 + Math.random() * 3;
+                    const lowerUnits = Math.max(10, this.units - penalty);
+                    const lowerValue = lowerUnits * avgNAV;
+                    const lowerProfit = ((lowerUnits - 10) / 10) * 100;
+                    
+                    leaderboard.push({
+                        rank: i,
+                        name: otherNames[i - userRank - 1],
+                        units: lowerUnits,
+                        value: lowerValue,
+                        profit: lowerProfit,
+                        isUser: false
+                    });
+                }
+                
+                this.renderLeaderboard(leaderboard);
+            }
+
+            renderLeaderboard(data) {
+                const container = document.getElementById('leaderboard');
+                container.innerHTML = '';
+                
+                data.forEach(player => {
+                    const item = document.createElement('div');
+                    item.className = `leaderboard-item ${player.isUser ? 'user' : ''}`;
+                    
+                    const icons = {
+                        1: '👑',
+                        2: '🥈',
+                        3: '🥉'
+                    };
+                    
+                    item.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 32px; height: 32px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                <span style="font-size: ${player.rank <= 3 ? '16px' : '12px'}; font-weight: 700; color: ${player.rank <= 3 ? '#FFD700' : '#0B6E69'};">
+                                    ${icons[player.rank] || player.rank}
+                                </span>
+                            </div>
+                            <div>
+                                <p style="font-size: 14px; font-weight: 600; color: ${player.isUser ? '#F4B400' : '#1A1A1A'};">
+                                    ${player.name}
+                                </p>
+                                <p style="font-size: 11px; color: #6B7280;">${player.units.toFixed(2)} units</p>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="font-size: 14px; font-weight: 700; color: #16A34A;">
+                                ₹${player.value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                            <p style="font-size: 11px; color: #6B7280;">+${player.profit.toFixed(2)}%</p>
+                        </div>
+                    `;
+                    
+                    container.appendChild(item);
+                });
+            }
+
+            showToast(message) {
+                const existing = document.querySelector('.toast');
+                if (existing) existing.remove();
+                
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.innerHTML = `<p style="font-size: 14px; color: #0B6E69; font-weight: 700;">${message}</p>`;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => toast.remove(), 2000);
+            }
+
+            playAgain() {
+                // Reset state
+                this.units = 10;
+                this.time = 0;
+                this.progress = 0;
+                this.nav = 100;
+                this.investedAmount = 1000;
+                this.holdActionsLeft = 6;
+                this.investActionsLeft = 5;
+                this.gameActive = false;
+                this.exited = false;
+                
+                // Reset UI
+                document.getElementById('hold-btn').disabled = false;
+                document.getElementById('hold-btn').style = '';
+                document.getElementById('invest-btn').disabled = false;
+                document.getElementById('invest-btn').style = '';
+                document.getElementById('hold-count').textContent = '6 left';
+                document.getElementById('invest-count').textContent = '5 left';
+                
+                this.showScreen('intro');
+            }
+
+            showShare() {
+                document.getElementById('share-message').textContent = this.exited
+                    ? `I learned about market volatility by staying invested for ${this.time} seconds.`
+                    : `I stayed invested through volatility and reached the wealth goal with ${this.units.toFixed(2)} units!`;
+                
+                document.getElementById('share-time').textContent = `${this.time}s`;
+                document.getElementById('share-units').textContent = this.units.toFixed(2);
+                
+                document.getElementById('share-overlay').classList.add('active');
+            }
+
+            closeShare() {
+                document.getElementById('share-overlay').classList.remove('active');
+            }
+
+            toggleMute() {
+                const muted = this.sound.toggleMute();
+                this.updateVolumeIcon();
+            }
+
+            updateVolumeIcon() {
+                const icon = document.getElementById('volume-icon');
+                if (this.sound.isMuted) {
+                    icon.innerHTML = `
+                        <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                        <line x1="23" y1="9" x2="17" y2="15"></line>
+                        <line x1="17" y1="9" x2="23" y2="15"></line>
+                    `;
+                } else {
+                    icon.innerHTML = `
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    `;
+                }
+            }
+        }
+
+        // Initialize game
+        const game = new Game();
+    </script>
+</body>
+</html>
